@@ -54,15 +54,15 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down — Bye")
 
 # app instance
-app = FastAPI(
-    title       = API_TITLE,
-    description = API_DESCRIPTION,
-    version     = API_VERSION,
-    lifespan    = lifespan,
-    docs_url    = "/docs",
-    redoc_url   = "/redoc",
-    openapi_url = "/openapi.json",
-)
+app = FastAPI()
+
+@app.get("/")
+def root():
+    return {"status": "ok"}
+
+@app.get("/health")
+def health():
+    return {"message": "healthy"}
 
 # cors middleware
 app.add_middleware(
