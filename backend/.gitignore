@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+venv/
+.segmentation_env/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Artifacts (VERY IMPORTANT — huge files)
+artifacts/
+*.pkl
+*.parquet
+*.joblib
+*.csv
+
+# Docker
+*.tar
