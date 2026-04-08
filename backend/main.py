@@ -18,6 +18,8 @@ from config import (
 from loader import load_all_artifacts
 from routes import predict, segments, recommendations, health, categories
 
+print("APP IS STARTING NOW!")
+
 # logging setup
 logging.basicConfig(
     level  = logging.INFO,

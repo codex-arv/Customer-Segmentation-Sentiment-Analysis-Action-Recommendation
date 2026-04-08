@@ -1,0 +1,13 @@
+artifacts/
+artifacts.zip
+data/
+notebooks/
+references/
+*.parquet
+*.pkl
+*.pdf
+*.docx
+temp/
+random_files/
+.env
+__pycache__/

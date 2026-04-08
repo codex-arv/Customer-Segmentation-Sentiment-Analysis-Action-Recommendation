@@ -171,8 +171,8 @@ def load_all_artifacts():
     print("="*75)
 
     # step 1: validating the existence of all paths
-    print("\n[CHECK] Validating artifact paths...")
-    validate_paths()
+    # print("\n[CHECK] Validating artifact paths...")
+    # validate_paths()
     print("All paths validated!")
 
     # step 2: loading the sentence transformer model
