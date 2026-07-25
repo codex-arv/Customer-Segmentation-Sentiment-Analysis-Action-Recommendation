@@ -41,7 +41,7 @@ async def get_recommendations(
     ),
     super_cluster_name : str = Path(
         ...,
-        description = "Super cluster name e.g. 'Electronics Setup'",
+        description = "Super cluster name e.g. 'Home Entertainment '",
         examples    = ["Electronics Setup", "Electronics Issues"]
     ),
     artifacts: ArtifactRegistry = Depends(get_artifacts)

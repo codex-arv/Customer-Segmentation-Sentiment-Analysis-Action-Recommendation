@@ -1,6 +1,6 @@
 FROM python:3.10-slim
 
-# system dependencies for ML libs
+# System dependencies required by ML libraries
 RUN apt-get update && apt-get install -y \
     build-essential \
     gcc \
@@ -9,15 +9,22 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# install python dependencies
+# Upgrade pip
+RUN pip install --no-cache-dir --upgrade pip
+
+# Install CPU-only PyTorch
+RUN pip install --no-cache-dir \
+    torch \
+    --index-url https://download.pytorch.org/whl/cpu
+
+# Install remaining Python dependencies
 COPY requirements.txt .
+
 RUN pip install --no-cache-dir -r requirements.txt
 
-# copy project files
+# Copy application code
 COPY . .
 
-# expose container port
 EXPOSE 10000
 
-# start application
 CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-10000}"]
