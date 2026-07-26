@@ -114,23 +114,27 @@ def _load(name: str, loader_fn, critical: bool = True):
 
 # LLM initialization and model selection
 def _init_llm_client():
+    # load_dotenv() is useful for local development.
+    # On Render, GROQ_API_KEY is injected directly
+    # as an environment variable.
     load_dotenv()
+
     api_key = os.getenv("GROQ_API_KEY")
+
     if not api_key:
         raise EnvironmentError(
-            "API key not found in environment. "
-            "Ensure .env file exists at C:\\minor\\backend\\.env "
-            "with GROQ_API_KEY=your_key"
+            "GROQ_API_KEY not found in environment. "
+            "Set GROQ_API_KEY as an environment variable."
         )
 
     client = OpenAI(
-        api_key  = api_key,
-        base_url = GROQ_API_BASE
+        api_key=api_key,
+        base_url=GROQ_API_BASE
     )
 
     # test models in priority order
     candidates = [
-        LLM_MODEL_SECONDARY,  
+        LLM_MODEL_SECONDARY,
         LLM_MODEL_PRIMARY,
         LLM_MODEL_TERTIARY,
     ]
@@ -138,30 +142,62 @@ def _init_llm_client():
     for model in candidates:
         try:
             response = client.chat.completions.create(
-                model       = model,
-                temperature = 0,
-                max_tokens  = 10,
-                messages    = [{"role": "user", "content": '{"status": "ok"}'}]
+                model=model,
+                temperature=0,
+                max_tokens=10,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": '{"status": "ok"}'
+                    }
+                ]
             )
+
             raw = response.choices[0].message.content.strip()
+
             if "<think>" in raw:
                 raw = re.sub(
-                    r"<think>.*?</think>", "", raw, flags=re.DOTALL
+                    r"<think>.*?</think>",
+                    "",
+                    raw,
+                    flags=re.DOTALL
                 ).strip()
-            print(f"[OK] LLM client → {model}")
+
+            print(
+                f"[OK] LLM client → {model}"
+            )
+
             return client, model
+
         except Exception as e:
+
             error_msg = str(e)
-            if "tokens per day" in error_msg or "TPD" in error_msg:
-                print(f"[QUOTA] {model} — daily quota exhausted")
+
+            if (
+                "tokens per day"
+                in error_msg
+                or "TPD"
+                in error_msg
+            ):
+                print(
+                    f"[QUOTA] {model} — daily quota exhausted"
+                )
+
             elif "decommissioned" in error_msg:
-                print(f"[DECOMMISSIONED] {model}")
+                print(
+                    f"[DECOMMISSIONED] {model}"
+                )
+
             else:
-                print(f"[UNAVAILABLE] {model}: {e}")
+                print(
+                    f"[UNAVAILABLE] {model}: {e}"
+                )
+
             continue
 
     raise RuntimeError(
-        "All LLM models unavailable. Check Groq API key and quota at https://console.groq.com/settings/usage"
+        "All LLM models unavailable. "
+        "Check Groq API key and quota."
     )
 
 # main loader: call once on FastAPI startup

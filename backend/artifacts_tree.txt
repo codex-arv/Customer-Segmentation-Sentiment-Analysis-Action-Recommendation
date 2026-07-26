@@ -1,0 +1,5 @@
+Folder PATH listing for volume Windows-SSD
+Volume serial number is EC39-05A9
+C:\MINOR\BACKEND\ARTIFACTS
+No subfolders exist 
+

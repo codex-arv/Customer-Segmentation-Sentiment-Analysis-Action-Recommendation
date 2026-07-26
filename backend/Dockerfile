@@ -1,30 +1,77 @@
 FROM python:3.10-slim
 
-# System dependencies required by ML libraries
+# ============================================================================
+# SYSTEM DEPENDENCIES
+# ============================================================================
+
 RUN apt-get update && apt-get install -y \
     build-essential \
     gcc \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
+
+# ============================================================================
+# APPLICATION DIRECTORY
+# ============================================================================
+
 WORKDIR /app
 
-# Upgrade pip
+
+# ============================================================================
+# PYTHON / PIP
+# ============================================================================
+
 RUN pip install --no-cache-dir --upgrade pip
 
-# Install CPU-only PyTorch
+
+# ============================================================================
+# CPU-ONLY PYTORCH
+# ============================================================================
+
 RUN pip install --no-cache-dir \
     torch \
     --index-url https://download.pytorch.org/whl/cpu
 
-# Install remaining Python dependencies
-COPY requirements.txt .
 
-RUN pip install --no-cache-dir -r requirements.txt
+# ============================================================================
+# PYTHON DEPENDENCIES
+# ============================================================================
 
-# Copy application code
-COPY . .
+COPY backend/requirements.txt .
+
+RUN pip install --no-cache-dir \
+    -r requirements.txt
+
+
+# ============================================================================
+# APPLICATION CODE
+# ============================================================================
+
+COPY backend/ .
+
+
+# ============================================================================
+# ARTIFACT DIRECTORY
+# ============================================================================
+#
+# Artifacts are NOT bundled into the Docker image.
+# They are downloaded from Cloudflare R2 by start.sh
+# when the container starts.
+#
+
+ENV ARTIFACT_DIR=/app/artifacts
+
+
+# ============================================================================
+# PORT
+# ============================================================================
 
 EXPOSE 10000
 
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-10000}"]
+
+# ============================================================================
+# STARTUP
+# ============================================================================
+
+CMD ["sh", "start.sh"]

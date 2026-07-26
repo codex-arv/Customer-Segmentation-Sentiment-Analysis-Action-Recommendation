@@ -11,3 +11,4 @@ requests
 umap-learn
 hdbscan
 openai
+boto3
