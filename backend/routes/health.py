@@ -48,12 +48,19 @@ async def get_health(
         "Topic cache"           : artifacts.topic_cache,
         "Super cluster cache"   : artifacts.super_cache,
         "Recommendations cache" : artifacts.reco_cache,
-        "Enriched dataset"      : artifacts.df_final_clean,
+        "Enriched dataset": (
+            artifacts.df_final_clean
+            if artifacts._df_final_loaded
+            else "lazy"
+        ),
         "LLM client"            : artifacts.llm_client,
     }
 
     for name, artifact in checks.items():
-        status = "loaded" if artifact is not None else "missing"
+        if artifact == "lazy":
+            status = "lazy"
+        else:
+            status = "loaded" if artifact is not None else "missing"
         artifact_details.append(ArtifactStatus(
             name   = name,
             status = status,
@@ -62,12 +69,19 @@ async def get_health(
 
     # check bertopic models
     for sc_key in sorted(BERTOPIC_MODEL_PATHS.keys()):
-        loaded = sc_key in artifacts.bertopic_models and artifacts.bertopic_models[sc_key] is not None
-        artifact_details.append(ArtifactStatus(
-            name   = f"BERTopic [{sc_key}]",
-            status = "loaded" if loaded else "missing",
-            path   = str(BERTOPIC_MODEL_PATHS[sc_key])
-        ))
+
+        if sc_key in artifacts.bertopic_models:
+            status = "loaded"
+        else:
+            status = "lazy"
+
+        artifact_details.append(
+            ArtifactStatus(
+                name=f"BERTopic [{sc_key}]",
+                status=status,
+                path=str(BERTOPIC_MODEL_PATHS[sc_key])
+            )
+        )
 
     loaded_count = sum(1 for a in artifact_details if a.status == "loaded")
     total_count  = len(artifact_details)

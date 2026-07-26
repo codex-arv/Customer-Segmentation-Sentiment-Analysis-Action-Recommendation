@@ -2,7 +2,11 @@
 
 from fastapi import APIRouter, Depends, HTTPException, Path
 from models import RecommendationResponse, ErrorResponse
-from loader import ArtifactRegistry, get_artifacts
+from loader import (
+    ArtifactRegistry,
+    get_artifacts,
+    load_final_dataset
+)
 from config import CATEGORIES, normalize_category
 import pandas as pd
 
@@ -118,7 +122,7 @@ async def get_recommendations(
     reco = artifacts.reco_cache[sc_key]
 
     # enrich with live sentiment distribution
-    df       = artifacts.df_final_clean
+    df       = load_final_dataset()
     seg_df   = df[(df["category"] == internal_category) & (df["super_cluster"] == super_id)]
 
     sentiment_dist = None

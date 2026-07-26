@@ -3,8 +3,15 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import Optional
 from models import SegmentsResponse, SegmentSummary, TopicSummary, ErrorResponse
-from loader import ArtifactRegistry, get_artifacts
-from config import CATEGORIES
+from loader import (
+    ArtifactRegistry,
+    get_artifacts,
+    load_final_dataset
+)
+from config import (
+    CATEGORIES,
+    BERTOPIC_MODEL_PATHS
+)
 
 router = APIRouter(
     prefix = "/segments",
@@ -59,11 +66,11 @@ async def get_segments(
                 }
             )
 
-    df    = artifacts.df_final_clean
+    df = load_final_dataset()
     reco  = artifacts.reco_cache
     segments = []
 
-    for sc_key in sorted(artifacts.bertopic_models.keys()):
+    for sc_key in sorted(BERTOPIC_MODEL_PATHS.keys()):
         parts    = sc_key.rsplit("__super", 1)
         cat      = parts[0]
         super_id = int(parts[1])

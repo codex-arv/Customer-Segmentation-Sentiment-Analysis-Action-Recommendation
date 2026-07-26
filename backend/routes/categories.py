@@ -2,7 +2,11 @@
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from loader import ArtifactRegistry, get_artifacts
+from loader import (
+    ArtifactRegistry,
+    get_artifacts,
+    load_final_dataset
+)
 from config import (
     CATEGORIES,
     CATEGORY_DISPLAY_NAMES
@@ -60,7 +64,7 @@ async def get_categories(
             }
         )
 
-    df   = artifacts.df_final_clean
+    df = load_final_dataset()
     reco = artifacts.reco_cache
 
     categories_out = []

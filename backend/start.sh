@@ -9,7 +9,6 @@ echo "==========================================================================
 
 echo ""
 echo "Checking environment..."
-
 echo "PORT = ${PORT:-10000}"
 echo "ARTIFACT DIRECTORY = ${ARTIFACT_DIR:-/app/artifacts}"
 

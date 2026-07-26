@@ -1,6 +1,7 @@
 # loads all artifacts on startup and stores it in the memory till server lifetime
 
 import os
+import time
 import re
 import json
 import joblib
@@ -57,6 +58,7 @@ class ArtifactRegistry:
 
         # bertopic models as value for category + super cluster as key
         self.bertopic_models   = {}   
+        self._bertopic_loaded  = False
 
         # lookup structures (caches & mappings)
         self.cluster_to_super  = {}  
@@ -67,6 +69,7 @@ class ArtifactRegistry:
 
         # enriched final dataset
         self.df_final_clean    = None 
+        self._df_final_loaded  = False
 
         # LLM 
         self.llm_client        = None  
@@ -95,6 +98,69 @@ _registry = ArtifactRegistry()
 def get_artifacts() -> ArtifactRegistry:
     """FastAPI dependency — returns the loaded registry."""
     return _registry
+
+def load_final_dataset():
+    """
+    Lazily load the complete enriched dataset.
+
+    The CSV remains unchanged and is loaded only when an endpoint
+    actually requires it. Once loaded, it is cached in memory for
+    subsequent requests.
+    """
+
+    if _registry.df_final_clean is not None:
+        return _registry.df_final_clean
+
+    print("\n" + "=" * 75)
+    print(" LAZY LOADING ENRICHED DATASET ")
+    print("=" * 75)
+
+    print(
+        f"[LOAD] Loading complete dataset from: "
+        f"{FINAL_ENRICHED_PATH}"
+    )
+
+    start = time.time()
+
+    try:
+
+        df = pd.read_csv(
+            FINAL_ENRICHED_PATH
+        )
+
+        _registry.df_final_clean = df
+        _registry._df_final_loaded = True
+
+        elapsed = time.time() - start
+
+        print(
+            f"[OK] Enriched dataset loaded successfully."
+        )
+
+        print(
+            f"[INFO] Shape: {df.shape}"
+        )
+
+        print(
+            f"[INFO] Memory usage: "
+            f"{df.memory_usage(deep=True).sum() / (1024 ** 2):.2f} MB"
+        )
+
+        print(
+            f"[INFO] Load time: {elapsed:.2f} sec"
+        )
+
+        return df
+
+    except Exception as e:
+
+        print(
+            f"[FAIL] Failed to load enriched dataset: {e}"
+        )
+
+        raise RuntimeError(
+            f"Failed to load enriched dataset: {e}"
+        ) from e
 
 # artifact loading with status tracking
 def _load(name: str, loader_fn, critical: bool = True):
@@ -291,20 +357,69 @@ def load_all_artifacts():
     )
 
     # step 6: loading bertopic models
-    print("\n[LOAD] 14 BERTopic models...")
-    for sc_key, model_path in BERTOPIC_MODEL_PATHS.items():
-        _registry.bertopic_models[sc_key] = _load(
-            f"BERTopic [{sc_key}]",
-            lambda p=model_path: BERTopic.load(str(p))
+    def load_bertopic_models():
+        """
+        Lazily load all BERTopic models.
+
+        Models are loaded only once and then cached in memory.
+        """
+
+        if _registry._bertopic_loaded:
+            return _registry.bertopic_models
+
+        print("\n" + "=" * 75)
+        print(" LAZY LOADING BERTOPIC MODELS ")
+        print("=" * 75)
+
+        start = time.time()
+
+        for sc_key, model_path in BERTOPIC_MODEL_PATHS.items():
+
+            if sc_key in _registry.bertopic_models:
+                continue
+
+            try:
+
+                print(
+                    f"[LOAD] BERTopic [{sc_key}]"
+                )
+
+                model = BERTopic.load(
+                    str(model_path)
+                )
+
+                _registry.bertopic_models[sc_key] = model
+
+                print(
+                    f"[OK] BERTopic [{sc_key}]"
+                )
+
+            except Exception as e:
+
+                print(
+                    f"[FAIL] BERTopic [{sc_key}]: {e}"
+                )
+
+                raise RuntimeError(
+                    f"Failed to load BERTopic model "
+                    f"'{sc_key}': {e}"
+                ) from e
+
+        _registry._bertopic_loaded = True
+
+        elapsed = time.time() - start
+
+        print(
+            f"[OK] All {len(_registry.bertopic_models)} "
+            f"BERTopic models loaded in {elapsed:.2f} sec."
         )
 
-    # step 7: loading enriched dataset
-    print("\n[LOAD] Enriched dataset...")
-    _registry.df_final_clean = _load(
-        "Enriched dataset (df_final_clean)",
-        lambda: pd.read_csv(FINAL_ENRICHED_PATH)
+        return _registry.bertopic_models
+    
+    print(
+        "\n[LAZY] Enriched dataset will be loaded "
+        "on first request that requires it."
     )
-    print(f"Shape: {_registry.df_final_clean.shape}")
 
     # step 8: loading LLM client
     print("\n[LOAD] LLM Groq client...")
